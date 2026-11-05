@@ -1,3 +1,4 @@
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -985,7 +986,7 @@ let clockTimer=null,scoreTimer=null,lastArea=null;
 let room0="main", lookChoice=store.get("wpp-look","museo");
 if(!(lookChoice in THEMES)&&lookChoice!=="match") lookChoice="museo";
 function applyTheme(){
-  const id=room0==="main"?"museo":(lookChoice==="match"?D[cur].id:lookChoice);
+  const id=lookChoice==="match"?D[cur].id:lookChoice;
   document.body.dataset.area=id;
   if(lastArea!==id){
     $("banner").innerHTML=THEMES[id].html;
@@ -997,7 +998,7 @@ function applyTheme(){
     lastArea=id;
     if(typeof WING!=="undefined") Object.keys(WING).forEach(renderWing);
   }
-  $("themeLine").textContent=room0==="main"?"The Pangunahing Bulwagan always uses the classic museum look. Your pick applies in the other rooms.":"Now showing: "+THEMES[id].name;
+  $("themeLine").textContent="Now showing: "+THEMES[id].name;
   $("mrz").hidden=id!=="others";
   $("mrz").textContent="P<PHLWHATS<POPPIN<<PINOY<<<<<<<<<<<<<<<<<<<<<<\nMO0HUM0802PHL0001017M3010316<<<<<<<<<<<<<<04";
   store.set("wpp-area",cur);
@@ -1161,6 +1162,110 @@ function eraNew(){eraDeck=shuffle(D.flatMap(d=>ASPECTS.slice(0,4).flatMap(a=>[0,
 function eraNext(){
   if(!eraDeck.length) eraDeck=shuffle(D.flatMap(d=>ASPECTS.slice(0,4).flatMap(a=>[0,1,2].map(e=>({d,a,e})))));
   eraCard=eraDeck.pop();eraDone=false;
+  $("eraArea").textContent=`${eraCard.d.en} · ${eraCard.a.label.replace(/^Aspect \d · /,"")}`;
+  $("eraClue").textContent=`“${eraCard.d[eraCard.a.key][eraCard.e]}”`;
+  $("eraFeedback").textContent="";$("eraFeedback").className="feedback";
+  $("eraBtns").querySelectorAll("button").forEach(b=>b.disabled=false);
+  $("eraScore").textContent=`${eraRight} / ${eraTotal}`;
+}
+$("eraBtns").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  if(eraDone) return; eraDone=true; eraTotal++;
+  const ok=+b.dataset.era===eraCard.e; if(ok) eraRight++;
+  $("eraFeedback").textContent=ok?`Tama! That's ${ERAS[eraCard.e].tag} (${ERAS[eraCard.e].short}).`:`Hindi. That one is ${ERAS[eraCard.e].tag} (${ERAS[eraCard.e].short}).`;
+  $("eraFeedback").className="feedback "+(ok?"ok":"no");
+  $("eraBtns").querySelectorAll("button").forEach(x=>x.disabled=true);
+  $("eraScore").textContent=`${eraRight} / ${eraTotal}`;
+});
+$("eraNext").onclick=eraNext; $("eraReset").onclick=eraNew;
+eraNew();
+
+/* ---------- Palaruan: Pop Quiz ---------- */
+const QUIZ=[
+  {q:"What did Filipinos use to quickly gather crowds during EDSA Dos in 2001?",o:["Text messages","Facebook events","TV ads","Radio only"],a:0,why:"Text brigades spread the call to EDSA by SMS."},
+  {q:"Which typhoon in 2009 sparked massive online relief efforts?",o:["Yolanda","Ondoy","Pepeng","Ulysses"],a:1,why:"Typhoon Ondoy (Ketsana) flooded Metro Manila in September 2009."},
+  {q:"Which industry boomed in Metro Manila in the 2000s?",o:["Car manufacturing","BPO and call centers","Mining","Shipbuilding"],a:1,why:"The BPO boom built a night-shift, service economy."},
+  {q:"Where did 2000s Filipino youth usually hang out?",o:["Co-working spaces","Malls like SM and Ayala","Esports arenas","Rooftop bars"],a:1,why:"Mega-malls were the main public square for tambay culture."},
+  {q:"How did OFWs see their families in the 2000s?",o:["HD FaceTime","Webcams at internet cafes","VR headsets","Hologram calls"],a:1,why:"Families went to internet cafes for webcam kamustahan on Yahoo Messenger or Skype."},
+  {q:"Which Taiwanese drama helped start the Asianovela craze?",o:["Meteor Garden","Crash Landing on You","Squid Game","Hotel del Luna"],a:0,why:"Meteor Garden opened the door to Asian pop in the Philippines."},
+  {q:"Which band released the 2006 hit “Narda”?",o:["Hale","Kamikazee","Callalily","Sponge Cola"],a:1,why:"“Narda” is from Kamikazee's 2006 album Maharot."},
+  {q:"What do we predict for P-Pop by 2030?",o:["It will disappear","It will stay local only","It will become a global presence","It will only be on radio"],a:2,why:"Our Workbook 3 predicts Filipinos will export their own pop culture."},
+  {q:"What is one 2030 concern we predicted for Philippine politics?",o:["Fax machines","AI deepfakes and disinformation","Too few TV channels","Paper-only voting"],a:1,why:"AI-generated content will make media literacy central."}
+];
+let qOrder=[],qi=0,qScore=0,qAnswered=false;
+function quizNew(){qOrder=shuffle([...QUIZ.keys()]);qi=0;qScore=0;quizShow();}
+function quizShow(){
+  qAnswered=false;$("quizNext").disabled=true;$("quizFeedback").textContent="";$("quizFeedback").className="feedback";
+  if(qi>=qOrder.length){
+    const msg=qScore===QUIZ.length?"Perfect! Certified Pinoy pop culture expert.":qScore>=6?"Galing! You really walked through the museum.":qScore>=4?"Not bad! Visit the wings again and retry.":"Balik ka sa museum and try again!";
+    $("quizCount").textContent="Tapos na!";$("quizQ").textContent=`You got ${qScore} out of ${QUIZ.length}. ${msg}`;$("quizOpts").innerHTML="";$("quizScore").textContent=`${qScore} / ${QUIZ.length}`;return;
+  }
+  const Q=QUIZ[qOrder[qi]];
+  $("quizCount").textContent=`Question ${qi+1} of ${QUIZ.length}`;$("quizScore").textContent=`Score: ${qScore}`;
+  $("quizQ").textContent=Q.q;
+  $("quizOpts").innerHTML=Q.o.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o)}</button>`).join("");
+  $("quizOpts").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    if(qAnswered) return; qAnswered=true;
+    const ok=+b.dataset.i===Q.a; if(ok) qScore++;
+    $("quizOpts").querySelectorAll(".opt").forEach(x=>{x.disabled=true;if(+x.dataset.i===Q.a)x.classList.add("right");});
+    if(!ok) b.classList.add("wrong");
+    $("quizFeedback").textContent=(ok?"Tama! ":"Mali. ")+Q.why;$("quizFeedback").className="feedback "+(ok?"ok":"no");
+    $("quizScore").textContent=`Score: ${qScore}`;$("quizNext").disabled=false;$("quizNext").focus();
+  });
+}
+$("quizNext").onclick=()=>{qi++;quizShow();}; $("quizReset").onclick=quizNew;
+quizNew();
+
+/* ---------- Palaruan: Unli-txt simulator ---------- */
+let load=20,unli=false;
+const peso=v=>"₱"+v.toFixed(2);
+function smsUpdate(){
+  const n=$("smsText").value.length, parts=Math.max(1,Math.ceil(n/160));
+  $("smsCount").textContent=`${parts*160-n||160}/${parts}`;
+  $("loadBal").textContent=unli?"Load: UNLI-TXT":"Load: "+peso(load);
+}
+function send(count){
+  const txt=$("smsText").value.trim();
+  if(!txt){$("smsStatus").textContent="Type a message first.";return;}
+  const parts=Math.ceil(txt.length/160), cost=unli?0:count*parts;
+  if(cost>load){$("smsStatus").textContent=`Insufficient load! Need ${peso(cost)}. Pasaload ka muna.`;return;}
+  load-=cost;$("smsStatus").textContent=count>1?`GM sent to ${count} contacts!${unli?"":" -"+peso(cost)}`:`Message sent!${unli?"":" -"+peso(cost)}`;
+  $("smsText").value="";smsUpdate();
+}
+$("smsText").addEventListener("input",smsUpdate);
+$("smsSend").onclick=()=>send(1);
+$("smsGM").onclick=()=>send(10);
+$("smsUnli").onclick=()=>{if(unli){$("smsStatus").textContent="You're already on Unli-txt.";return;}if(load<15){$("smsStatus").textContent="Unli-txt costs ₱15. Reload first.";return;}load-=15;unli=true;$("smsStatus").textContent="Registered! Unli-txt to all networks for 1 day.";smsUpdate();};
+$("smsLoad").onclick=()=>{load+=20;$("smsStatus").textContent="Reloaded ₱20 at the sari-sari store.";smsUpdate();};
+smsUpdate();
+
+/* ---------- Palaruan: Guestbook ---------- */
+function gbRender(){
+  const notes=store.get("wpp-guestbook",[]);
+  $("gbList").innerHTML=notes.length?`<span class="eyebrow">Your notes on this device</span>`+notes.slice().reverse().map(n=>`<div class="gb-note"><b>${esc(n.name)}</b> · ${esc(n.reaction)}<p>${esc(n.message)}</p></div>`).join(""):"";
+}
+$("gbForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const note={name:$("gbName").value.trim(),reaction:$("gbReact").value,message:$("gbMsg").value.trim()};
+  if(!note.name||!note.message) return;
+  const notes=store.get("wpp-guestbook",[]);notes.push(note);store.set("wpp-guestbook",notes);gbRender();
+  let sent=false;
+  try{
+    const body=new URLSearchParams(new FormData($("gbForm"))).toString();
+    const r=await fetch("/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+    sent=r.ok;
+  }catch(err){}
+  $("gbFeedback").textContent=sent?"Salamat! Your note was sent to the curators.":"Salamat! Your note is saved on this device.";
+  $("gbFeedback").className="feedback ok";
+  $("gbMsg").value="";
+});
+gbRender();
+
+renderAll();
+show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
   $("eraArea").textContent=`${eraCard.d.en} · ${eraCard.a.label.replace(/^Aspect \d · /,"")}`;
   $("eraClue").textContent=`“${eraCard.d[eraCard.a.key][eraCard.e]}”`;
   $("eraFeedback").textContent="";$("eraFeedback").className="feedback";
