@@ -986,7 +986,7 @@ let clockTimer=null,scoreTimer=null,lastArea=null;
 let room0="main", lookChoice=store.get("wpp-look","museo");
 if(!(lookChoice in THEMES)&&lookChoice!=="match") lookChoice="museo";
 function applyTheme(){
-  const id=room0==="main"?"museo":(lookChoice==="match"?D[cur].id:lookChoice);
+  const id=lookChoice==="match"?D[cur].id:lookChoice;
   document.body.dataset.area=id;
   if(lastArea!==id){
     $("banner").innerHTML=THEMES[id].html;
@@ -998,7 +998,7 @@ function applyTheme(){
     lastArea=id;
     if(typeof WING!=="undefined") Object.keys(WING).forEach(renderWing);
   }
-  $("themeLine").textContent=room0==="main"?"The Pangunahing Bulwagan always uses the classic museum look. Your pick applies in the other rooms.":"Now showing: "+THEMES[id].name;
+  $("themeLine").textContent="Now showing: "+THEMES[id].name;
   $("mrz").hidden=id!=="others";
   $("mrz").textContent="P<PHLWHATS<POPPIN<<PINOY<<<<<<<<<<<<<<<<<<<<<<\nMO0HUM0802PHL0001017M3010316<<<<<<<<<<<<<<04";
   store.set("wpp-area",cur);
